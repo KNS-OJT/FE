@@ -1,17 +1,24 @@
-import { Button, Typography } from 'antd'
-import { env } from '@/config/env'
-import { AppProviders } from '@/app/providers'
+import '@ant-design/v5-patch-for-react-19';
+import { App as AntApp, ConfigProvider } from 'antd';
+import viVN from 'antd/locale/vi_VN';
+import 'dayjs/locale/vi';
+import dayjs from 'dayjs';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider } from 'react-router';
+import { queryClient } from '@/lib/queryClient';
+import { router } from '@/router';
+import { theme } from '@/theme';
+
+dayjs.locale('vi');
 
 export default function App() {
   return (
-    <AppProviders>
-      <main className="p-4">
-        <Typography.Title level={1}>{env.VITE_APP_NAME}</Typography.Title>
-        <Typography.Paragraph>
-          Frontend environment is ready.
-        </Typography.Paragraph>
-        <Button type="primary">Setup ready</Button>
-      </main>
-    </AppProviders>
-  )
+    <ConfigProvider locale={viVN} theme={theme}>
+      <AntApp>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </AntApp>
+    </ConfigProvider>
+  );
 }

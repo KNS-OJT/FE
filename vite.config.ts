@@ -1,6 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
 import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
 import { z } from 'zod'
@@ -12,7 +11,7 @@ export default defineConfig(({ mode }) => {
     .default('http://localhost:8080')
     .parse(env.VITE_DEV_PROXY_TARGET)
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [react()],
     resolve: {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },
@@ -20,6 +19,7 @@ export default defineConfig(({ mode }) => {
     build: { sourcemap: false },
     test: {
       environment: 'jsdom',
+      globals: true,
       setupFiles: ['./src/test/setup.ts'],
       css: true,
     },
