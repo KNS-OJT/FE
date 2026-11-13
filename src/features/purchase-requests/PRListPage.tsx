@@ -6,9 +6,8 @@ import { Table, Button, Tabs, Space } from 'antd'
 import { PlusOutlined, EyeOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router'
-import type { PurchaseRequest, PaginatedResponse } from '@/types'
-import { mockGetPurchaseRequests } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { PurchaseRequest } from '@/types'
+import { purchaseRequestApi } from '@/api'
 import { formatDateTime } from '@/utils'
 import { PR_STATUS_LABELS, PR_STATUS_COLORS } from '@/constants'
 import { PageHeader, StatusTag } from '@/components/common'
@@ -33,14 +32,7 @@ export function PRListPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['purchase-requests', page, statusFilter],
-    queryFn: async () => {
-      try {
-        const res = await http.get('/purchase-requests', { params: { page, size: 20, status: statusFilter || undefined } })
-        return res.data as PaginatedResponse<PurchaseRequest>
-      } catch {
-        return await mockGetPurchaseRequests(page, 20, statusFilter || undefined)
-      }
-    },
+    queryFn: () => purchaseRequestApi.getPurchaseRequests(page, 20, statusFilter || undefined),
   })
 
   const columns: ColumnsType<PurchaseRequest> = [

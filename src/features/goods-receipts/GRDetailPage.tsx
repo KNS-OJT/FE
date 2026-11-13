@@ -5,9 +5,8 @@ import { Card, Descriptions, Table, Button, Spin, Alert, message, Popconfirm } f
 import { ArrowLeftOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router'
-import type { GoodsReceipt, GoodsReceiptItem } from '@/types'
-import { mockGetGoodsReceipt } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { GoodsReceiptItem } from '@/types'
+import { goodsReceiptApi } from '@/api'
 import { formatDateTime, formatNumber } from '@/utils'
 import { GR_STATUS_LABELS, GR_STATUS_COLORS } from '@/constants'
 import { PageHeader, StatusTag } from '@/components/common'
@@ -22,29 +21,16 @@ export function GRDetailPage() {
 
   const { data: gr, isLoading } = useQuery({
     queryKey: ['goods-receipt', id],
-    queryFn: async () => {
-      try {
-        const res = await http.get(`/goods-receipts/${id}`)
-        return res.data as GoodsReceipt
-      } catch {
-        return await mockGetGoodsReceipt(Number(id))
-      }
-    },
+    queryFn: () => goodsReceiptApi.getGoodsReceiptById(Number(id)),
     enabled: !!id,
   })
 
   const confirmMutation = useMutation({
-    mutationFn: async () => {
-      try {
-        const res = await http.post(`/goods-receipts/${id}/confirm`)
-        return res.data
-      } catch {
-        message.info('(Mock) Xác nhận thành công')
-      }
-    },
+    mutationFn: () => goodsReceiptApi.confirmGoodsReceipt(Number(id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goods-receipt', id] })
       queryClient.invalidateQueries({ queryKey: ['goods-receipts'] })
+      queryClient.invalidateQueries({ queryKey: ['stock-balances'] })
       message.success('Xác nhận phiếu nhận hàng thành công — Tồn kho đã được cập nhật')
     },
   })

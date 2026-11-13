@@ -153,6 +153,16 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
       { purchaseOrderItemId: 2, purchaseRequestItemId: 2, productId: 6, sku: 'RAM-DDR5-32G', productName: 'G.Skill Trident Z5 DDR5 32GB 6000MHz', unit: 'thanh', quantity: 10, receivedQuantity: 0, remainingQuantity: 10 },
     ],
   },
+  {
+    purchaseOrderId: 2, orderCode: 'PO-2026-00002', purchaseRequestId: 2, requestCode: 'PR-2026-00002',
+    supplierId: 2, supplierName: 'An Phát Computer', createdBy: 3, creatorName: 'Lê Minh Mua',
+    orderDate: '2026-10-27T08:30:00Z', expectedDeliveryDate: '2026-11-10T00:00:00Z',
+    status: 'ORDERED', note: 'Đặt SSD Samsung theo yêu cầu dự án', cancelReason: null,
+    createdAt: '2026-10-27T08:00:00Z',
+    items: [
+      { purchaseOrderItemId: 3, purchaseRequestItemId: 3, productId: 7, sku: 'SSD-NV-1TB', productName: 'Samsung 990 EVO Plus 1TB NVMe', unit: 'cái', quantity: 15, receivedQuantity: 0, remainingQuantity: 15 },
+    ],
+  },
 ]
 
 export const mockGoodsReceipts: GoodsReceipt[] = [
@@ -261,12 +271,15 @@ export async function mockCreateCategory(data: { categoryName: string; descripti
 }
 
 // ----- Products -----
-export async function mockGetProducts(page = 1, size = 20, search?: string) {
+export async function mockGetProducts(page = 1, size = 20, search?: string, categoryId?: number) {
   await delay()
   let filtered = mockProducts
+  if (categoryId) {
+    filtered = filtered.filter((p) => p.categoryId === categoryId)
+  }
   if (search) {
     const s = search.toLowerCase()
-    filtered = mockProducts.filter((p) => p.sku.toLowerCase().includes(s) || p.productName.toLowerCase().includes(s))
+    filtered = filtered.filter((p) => p.sku.toLowerCase().includes(s) || p.productName.toLowerCase().includes(s))
   }
   return paginate(filtered, page, size)
 }

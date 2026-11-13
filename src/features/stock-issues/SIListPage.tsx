@@ -6,9 +6,8 @@ import { Table, Button, Tabs } from 'antd'
 import { PlusOutlined, EyeOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
-import type { StockIssue, PaginatedResponse } from '@/types'
-import { mockGetStockIssues } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { StockIssue } from '@/types'
+import { stockIssueApi } from '@/api'
 import { formatDateTime } from '@/utils'
 import { SI_STATUS_LABELS, SI_STATUS_COLORS } from '@/constants'
 import { PageHeader, StatusTag } from '@/components/common'
@@ -28,14 +27,7 @@ export function SIListPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['stock-issues', page, statusFilter],
-    queryFn: async () => {
-      try {
-        const res = await http.get('/stock-issues', { params: { page, size: 20, status: statusFilter || undefined } })
-        return res.data as PaginatedResponse<StockIssue>
-      } catch {
-        return await mockGetStockIssues(page, 20)
-      }
-    },
+    queryFn: () => stockIssueApi.getStockIssues(page, 20, statusFilter || undefined),
   })
 
   const columns: ColumnsType<StockIssue> = [

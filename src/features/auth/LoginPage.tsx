@@ -6,8 +6,7 @@ import { Form, Input, Button, Card, Typography, message, Alert } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router'
 import { useAuthStore } from '@/auth/store'
-import { mockLogin } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import { authApi } from '@/api'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -26,15 +25,7 @@ export function LoginPage() {
     setLoading(true)
     setError(null)
     try {
-      // Try real API first, fallback to mock
-      let result
-      try {
-        const res = await http.post('/auth/login', values)
-        result = res.data
-      } catch {
-        // Fallback to mock
-        result = await mockLogin(values.username, values.password)
-      }
+      const result = await authApi.login(values)
       setAuth(result.token, result.user)
       message.success(`Xin chào, ${result.user.fullName}!`)
       navigate('/dashboard')

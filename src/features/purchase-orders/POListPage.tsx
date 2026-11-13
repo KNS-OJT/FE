@@ -6,9 +6,8 @@ import { Table, Button } from 'antd'
 import { PlusOutlined, EyeOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
-import type { PurchaseOrder, PaginatedResponse } from '@/types'
-import { mockGetPurchaseOrders } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { PurchaseOrder } from '@/types'
+import { purchaseOrderApi } from '@/api'
 import { formatDateTime } from '@/utils'
 import { PO_STATUS_LABELS, PO_STATUS_COLORS } from '@/constants'
 import { PageHeader, StatusTag } from '@/components/common'
@@ -22,14 +21,7 @@ export function POListPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['purchase-orders', page],
-    queryFn: async () => {
-      try {
-        const res = await http.get('/purchase-orders', { params: { page, size: 20 } })
-        return res.data as PaginatedResponse<PurchaseOrder>
-      } catch {
-        return await mockGetPurchaseOrders(page, 20)
-      }
-    },
+    queryFn: () => purchaseOrderApi.getPurchaseOrders(page, 20),
   })
 
   const columns: ColumnsType<PurchaseOrder> = [

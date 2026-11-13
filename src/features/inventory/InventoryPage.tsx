@@ -5,9 +5,8 @@ import { useState } from 'react'
 import { Table, Input, Tag, Progress, InputNumber, Button, message } from 'antd'
 import { SearchOutlined, EditOutlined, SaveOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { StockBalance, PaginatedResponse } from '@/types'
-import { mockGetStockBalances } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { StockBalance } from '@/types'
+import { stockApi, productApi } from '@/api'
 import { formatNumber, formatDateTime } from '@/utils'
 import { PageHeader } from '@/components/common'
 import type { ColumnsType } from 'antd/es/table'
@@ -21,28 +20,15 @@ export function InventoryPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['stock-balances', page, search],
-    queryFn: async () => {
-      try {
-        const res = await http.get('/stock/balances', { params: { page, size: 20, search } })
-        return res.data as PaginatedResponse<StockBalance>
-      } catch {
-        return await mockGetStockBalances(page, 20)
-      }
-    },
+    queryFn: () => stockApi.getStockBalances(page, 20, search),
   })
 
   const updateMinStockMutation = useMutation({
-    mutationFn: async ({ productId, minimumStock }: { productId: number; minimumStock: number }) => {
-      try {
-        const res = await http.put(`/products/${productId}/min-stock`, { minimumStock })
-        return res.data
-      } catch {
-        message.info('(Mock) Cập nhật mức tồn tối thiểu thành công')
-        return {}
-      }
-    },
+    mutationFn: ({ productId, minimumStock }: { productId: number; minimumStock: number }) =>
+      productApi.updateMinStock(productId, minimumStock),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] })
+      queryClient.invalidateQueries({ queryKey: ['low-stock'] })
       message.success('Cập nhật mức tồn tối thiểu thành công')
       setEditingId(null)
     },

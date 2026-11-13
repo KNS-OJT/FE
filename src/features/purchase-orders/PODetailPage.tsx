@@ -5,9 +5,8 @@ import { Card, Descriptions, Table, Button, Alert, Spin, Tag, Progress } from 'a
 import { ArrowLeftOutlined, InboxOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router'
-import type { PurchaseOrder, PurchaseOrderItem } from '@/types'
-import { mockGetPurchaseOrder } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { PurchaseOrderItem } from '@/types'
+import { purchaseOrderApi } from '@/api'
 import { formatDateTime, formatNumber } from '@/utils'
 import { PO_STATUS_LABELS, PO_STATUS_COLORS } from '@/constants'
 import { PageHeader, StatusTag } from '@/components/common'
@@ -21,14 +20,7 @@ export function PODetailPage() {
 
   const { data: po, isLoading } = useQuery({
     queryKey: ['purchase-order', id],
-    queryFn: async () => {
-      try {
-        const res = await http.get(`/purchase-orders/${id}`)
-        return res.data as PurchaseOrder
-      } catch {
-        return await mockGetPurchaseOrder(Number(id))
-      }
-    },
+    queryFn: () => purchaseOrderApi.getPurchaseOrderById(Number(id)),
     enabled: !!id,
   })
 

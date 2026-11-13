@@ -6,9 +6,8 @@ import { Card, Descriptions, Table, Button, Steps, Alert, Modal, Input, message,
 import { CheckOutlined, CloseOutlined, SendOutlined, FileTextOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router'
-import type { PurchaseRequest, PurchaseRequestItem } from '@/types'
-import { mockGetPurchaseRequest } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { PurchaseRequestItem } from '@/types'
+import { purchaseRequestApi } from '@/api'
 import { formatDateTime, formatNumber } from '@/utils'
 import { PR_STATUS_LABELS, PR_STATUS_COLORS } from '@/constants'
 import { PageHeader, StatusTag } from '@/components/common'
@@ -25,44 +24,30 @@ export function PRDetailPage() {
 
   const { data: pr, isLoading } = useQuery({
     queryKey: ['purchase-request', id],
-    queryFn: async () => {
-      try {
-        const res = await http.get(`/purchase-requests/${id}`)
-        return res.data as PurchaseRequest
-      } catch {
-        return await mockGetPurchaseRequest(Number(id))
-      }
-    },
+    queryFn: () => purchaseRequestApi.getPurchaseRequestById(Number(id)),
     enabled: !!id,
   })
 
   const actionMutation = useMutation({
     mutationFn: async (action: { type: string; reason?: string }) => {
-      try {
-        if (action.type === 'submit') {
-          const res = await http.post(`/purchase-requests/${id}/submit`)
-          return res.data
-        }
-        if (action.type === 'approve') {
-          const res = await http.post(`/purchase-requests/${id}/approve`)
-          return res.data
-        }
-        if (action.type === 'reject') {
-          const res = await http.post(`/purchase-requests/${id}/reject`, { reason: action.reason })
-          return res.data
-        }
-        if (action.type === 'cancel') {
-          const res = await http.post(`/purchase-requests/${id}/cancel`)
-          return res.data
-        }
-      } catch {
-        // Mock: update local state
-        message.info('(Mock) Thao tác thành công')
+      const numId = Number(id)
+      if (action.type === 'submit') {
+        return await purchaseRequestApi.submitPurchaseRequest(numId)
+      }
+      if (action.type === 'approve') {
+        return await purchaseRequestApi.approvePurchaseRequest(numId)
+      }
+      if (action.type === 'reject') {
+        return await purchaseRequestApi.rejectPurchaseRequest(numId, action.reason ?? '')
+      }
+      if (action.type === 'cancel') {
+        return await purchaseRequestApi.cancelPurchaseRequest(numId)
       }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['purchase-request', id] })
       queryClient.invalidateQueries({ queryKey: ['purchase-requests'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       const msgs: Record<string, string> = {
         submit: 'Gửi PR thành công',
         approve: 'Duyệt PR thành công',
@@ -72,6 +57,10 @@ export function PRDetailPage() {
       message.success(msgs[variables.type])
       setRejectModalOpen(false)
       setRejectReason('')
+    },
+    onError: (err: unknown) => {
+      const apiErr = err as { response?: { data?: { message?: string } } }
+      message.error(apiErr?.response?.data?.message ?? 'Thao tác thất bại')
     },
   })
 

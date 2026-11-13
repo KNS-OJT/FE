@@ -6,9 +6,7 @@ import { Card, Form, Input, Button, Table, Select, InputNumber, message, Popconf
 import { PlusOutlined, DeleteOutlined, SendOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
-import type { Product, PaginatedResponse } from '@/types'
-import { mockGetProducts, mockCreateSI } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import { productApi, stockIssueApi } from '@/api'
 import { PageHeader } from '@/components/common'
 
 interface SIItemRow {
@@ -30,23 +28,14 @@ export function SICreatePage() {
   const { data: products } = useQuery({
     queryKey: ['products-active'],
     queryFn: async () => {
-      try {
-        const res = await http.get('/products', { params: { size: 200 } })
-        return (res.data as PaginatedResponse<Product>).content.filter(p => p.isActive)
-      } catch {
-        return (await mockGetProducts(1, 200)).content.filter(p => p.isActive)
-      }
+      const res = await productApi.getProducts(1, 200)
+      return res.content.filter(p => p.isActive)
     },
   })
 
   const createMutation = useMutation({
-    mutationFn: async (payload: { reason: string; note?: string; items: { productId: number; quantity: number }[] }) => {
-      try {
-        const res = await http.post('/stock-issues', payload)
-        return res.data
-      } catch {
-        return await mockCreateSI(payload)
-      }
+    mutationFn: (payload: { reason: string; note?: string; items: { productId: number; quantity: number }[] }) => {
+      return stockIssueApi.createStockIssue(payload)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock-issues'] })

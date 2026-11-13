@@ -5,9 +5,8 @@ import { useState } from 'react'
 import { Table, Button, Tag, Modal, Form, Input, Select, message, Popconfirm, Avatar } from 'antd'
 import { PlusOutlined, LockOutlined, UnlockOutlined, UserOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { User, PaginatedResponse, CreateUserRequest } from '@/types'
-import { mockGetUsers, mockCreateUser, mockLockUser } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { User, CreateUserRequest } from '@/types'
+import { userApi } from '@/api'
 import { formatDateTime } from '@/utils'
 import { ROLE_LABELS, ROLE_COLORS } from '@/constants'
 import { getInitials, stringToColor } from '@/utils'
@@ -23,27 +22,11 @@ export function UserListPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['users', page],
-    queryFn: async () => {
-      try {
-        const res = await http.get('/users', { params: { page, size: 20 } })
-        return res.data as PaginatedResponse<User>
-      } catch {
-        return await mockGetUsers(page, 20)
-      }
-    },
+    queryFn: () => userApi.getUsers(page, 20),
   })
 
   const createMutation = useMutation({
-    mutationFn: async (formData: CreateUserRequest) => {
-      try {
-        const res = await http.post('/users', formData)
-        return res.data
-      } catch (err: unknown) {
-        const apiErr = err as { response?: { status?: number } }
-        if (apiErr?.response?.status && apiErr.response.status < 500) throw err
-        return await mockCreateUser(formData)
-      }
-    },
+    mutationFn: (formData: CreateUserRequest) => userApi.createUser(formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       message.success('Tạo tài khoản thành công')
@@ -57,14 +40,7 @@ export function UserListPage() {
   })
 
   const lockMutation = useMutation({
-    mutationFn: async (userId: number) => {
-      try {
-        const res = await http.post(`/users/${userId}/lock`)
-        return res.data
-      } catch {
-        return await mockLockUser(userId)
-      }
-    },
+    mutationFn: (userId: number) => userApi.lockUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       message.success('Cập nhật trạng thái thành công')

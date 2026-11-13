@@ -5,9 +5,8 @@ import { useState } from 'react'
 import { Table, Button, Tag, Space, Modal, Form, Input, message, Popconfirm, Descriptions } from 'antd'
 import { PlusOutlined, EditOutlined, StopOutlined, CheckCircleOutlined, EyeOutlined, PhoneOutlined, MailOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Supplier, PaginatedResponse, SupplierFormData } from '@/types'
-import { mockGetSuppliers, mockCreateSupplier } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { Supplier, SupplierFormData } from '@/types'
+import { supplierApi } from '@/api'
 import { PageHeader } from '@/components/common'
 import type { ColumnsType } from 'antd/es/table'
 
@@ -22,30 +21,15 @@ export function SupplierListPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['suppliers', page],
-    queryFn: async () => {
-      try {
-        const res = await http.get('/suppliers', { params: { page, size: 20 } })
-        return res.data as PaginatedResponse<Supplier>
-      } catch {
-        return await mockGetSuppliers(page, 20)
-      }
-    },
+    queryFn: () => supplierApi.getSuppliers(page, 20),
   })
 
   const saveMutation = useMutation({
-    mutationFn: async (formData: SupplierFormData) => {
-      try {
-        if (editing) {
-          const res = await http.put(`/suppliers/${editing.supplierId}`, formData)
-          return res.data
-        }
-        const res = await http.post('/suppliers', formData)
-        return res.data
-      } catch (err: unknown) {
-        const apiErr = err as { response?: { status?: number } }
-        if (apiErr?.response?.status && apiErr.response.status < 500) throw err
-        return await mockCreateSupplier(formData)
+    mutationFn: (formData: SupplierFormData) => {
+      if (editing) {
+        return supplierApi.updateSupplier(editing.supplierId, formData)
       }
+      return supplierApi.createSupplier(formData)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] })
@@ -59,15 +43,8 @@ export function SupplierListPage() {
   })
 
   const toggleMutation = useMutation({
-    mutationFn: async (sup: Supplier) => {
-      try {
-        const res = await http.put(`/suppliers/${sup.supplierId}`, { isActive: !sup.isActive })
-        return res.data
-      } catch {
-        sup.isActive = !sup.isActive
-        return sup
-      }
-    },
+    mutationFn: (sup: Supplier) =>
+      supplierApi.updateSupplier(sup.supplierId, { isActive: !sup.isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] })
       message.success('Cập nhật trạng thái thành công')

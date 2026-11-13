@@ -6,8 +6,7 @@ import { AlertOutlined, ShoppingCartOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
 import type { StockBalance } from '@/types'
-import { mockGetLowStockProducts } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import { stockApi } from '@/api'
 import { formatNumber } from '@/utils'
 import { PageHeader } from '@/components/common'
 import type { ColumnsType } from 'antd/es/table'
@@ -17,14 +16,7 @@ export function StockAlertsPage() {
 
   const { data: lowStockProducts, isLoading } = useQuery({
     queryKey: ['stock-alerts'],
-    queryFn: async () => {
-      try {
-        const res = await http.get('/stock/low')
-        return res.data as StockBalance[]
-      } catch {
-        return await mockGetLowStockProducts()
-      }
-    },
+    queryFn: () => stockApi.getLowStockProducts(),
   })
 
   const columns: ColumnsType<StockBalance> = [

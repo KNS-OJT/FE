@@ -16,7 +16,10 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },
-    server: { proxy: { '/api': { target: proxyTarget, changeOrigin: true } } },
+    server: {
+      port: Number(env.VITE_PORT) || 5173,
+      proxy: { '/api': { target: proxyTarget, changeOrigin: true } },
+    },
     build: { sourcemap: false },
     test: {
       environment: 'jsdom',

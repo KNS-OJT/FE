@@ -5,9 +5,8 @@ import { useState } from 'react'
 import { Table, Button, Tag, Space, Modal, Form, Input, message, Popconfirm } from 'antd'
 import { PlusOutlined, EditOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Category, PaginatedResponse, CategoryFormData } from '@/types'
-import { mockGetCategories, mockCreateCategory } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { Category, CategoryFormData } from '@/types'
+import { categoryApi } from '@/api'
 import { PageHeader } from '@/components/common'
 import type { ColumnsType } from 'antd/es/table'
 
@@ -19,30 +18,15 @@ export function CategoryListPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['categories'],
-    queryFn: async () => {
-      try {
-        const res = await http.get('/categories', { params: { size: 100 } })
-        return res.data as PaginatedResponse<Category>
-      } catch {
-        return await mockGetCategories(1, 100)
-      }
-    },
+    queryFn: () => categoryApi.getCategories(1, 100),
   })
 
   const saveMutation = useMutation({
-    mutationFn: async (formData: CategoryFormData) => {
-      try {
-        if (editing) {
-          const res = await http.put(`/categories/${editing.categoryId}`, formData)
-          return res.data
-        }
-        const res = await http.post('/categories', formData)
-        return res.data
-      } catch (err: unknown) {
-        const apiErr = err as { response?: { status?: number } }
-        if (apiErr?.response?.status && apiErr.response.status < 500) throw err
-        return await mockCreateCategory(formData)
+    mutationFn: (formData: CategoryFormData) => {
+      if (editing) {
+        return categoryApi.updateCategory(editing.categoryId, formData)
       }
+      return categoryApi.createCategory(formData)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
@@ -56,15 +40,8 @@ export function CategoryListPage() {
   })
 
   const toggleMutation = useMutation({
-    mutationFn: async (cat: Category) => {
-      try {
-        const res = await http.put(`/categories/${cat.categoryId}`, { isActive: !cat.isActive })
-        return res.data
-      } catch {
-        cat.isActive = !cat.isActive
-        return cat
-      }
-    },
+    mutationFn: (cat: Category) =>
+      categoryApi.updateCategory(cat.categoryId, { isActive: !cat.isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       message.success('Cập nhật trạng thái thành công')

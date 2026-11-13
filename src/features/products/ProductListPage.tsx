@@ -5,9 +5,8 @@ import { useState } from 'react'
 import { Table, Button, Input, Tag, Space, Select, message, Modal, Form, Popconfirm } from 'antd'
 import { PlusOutlined, EditOutlined, StopOutlined, CheckCircleOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Product, Category, PaginatedResponse, ProductFormData } from '@/types'
-import { mockGetProducts, mockCreateProduct, mockGetCategories } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { Product, ProductFormData } from '@/types'
+import { productApi, categoryApi } from '@/api'
 import { formatDateTime } from '@/utils'
 import { PageHeader } from '@/components/common'
 import type { ColumnsType } from 'antd/es/table'
@@ -23,39 +22,19 @@ export function ProductListPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['products', page, search, categoryFilter],
-    queryFn: async () => {
-      try {
-        const res = await http.get('/products', { params: { page, size: 20, search, categoryId: categoryFilter } })
-        return res.data as PaginatedResponse<Product>
-      } catch {
-        return await mockGetProducts(page, 20, search)
-      }
-    },
+    queryFn: () => productApi.getProducts(page, 20, search, categoryFilter),
   })
 
   const { data: categories } = useQuery({
     queryKey: ['categories-all'],
     queryFn: async () => {
-      try {
-        const res = await http.get('/categories', { params: { size: 100 } })
-        return (res.data as PaginatedResponse<Category>).content
-      } catch {
-        return (await mockGetCategories(1, 100)).content
-      }
+      const res = await categoryApi.getCategories(1, 100)
+      return res.content
     },
   })
 
   const createMutation = useMutation({
-    mutationFn: async (formData: ProductFormData) => {
-      try {
-        const res = await http.post('/products', formData)
-        return res.data
-      } catch (err: unknown) {
-        const apiErr = err as { response?: { status?: number } }
-        if (apiErr?.response?.status && apiErr.response.status < 500) throw err
-        return await mockCreateProduct(formData)
-      }
-    },
+    mutationFn: (formData: ProductFormData) => productApi.createProduct(formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       message.success(editingProduct ? 'Cập nhật sản phẩm thành công' : 'Tạo sản phẩm thành công')
@@ -68,15 +47,8 @@ export function ProductListPage() {
   })
 
   const toggleMutation = useMutation({
-    mutationFn: async (product: Product) => {
-      try {
-        const res = await http.put(`/products/${product.productId}`, { isActive: !product.isActive })
-        return res.data
-      } catch {
-        product.isActive = !product.isActive
-        return product
-      }
-    },
+    mutationFn: (product: Product) =>
+      productApi.updateProduct(product.productId, { isActive: !product.isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       message.success('Cập nhật trạng thái thành công')

@@ -5,9 +5,8 @@ import { useState } from 'react'
 import { Table, Tag, Select, Input, Card } from 'antd'
 import { ArrowUpOutlined, ArrowDownOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import type { StockTransaction, PaginatedResponse } from '@/types'
-import { mockGetStockTransactions } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { StockTransaction } from '@/types'
+import { stockApi } from '@/api'
 import { formatDateTime, formatNumber } from '@/utils'
 import { TX_TYPE_LABELS, TX_TYPE_COLORS } from '@/constants'
 import { PageHeader } from '@/components/common'
@@ -20,14 +19,7 @@ export function StockLedgerPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['stock-ledger', page, typeFilter, search],
-    queryFn: async () => {
-      try {
-        const res = await http.get('/stock/ledger', { params: { page, size: 20, type: typeFilter, search } })
-        return res.data as PaginatedResponse<StockTransaction>
-      } catch {
-        return await mockGetStockTransactions(page, 20)
-      }
-    },
+    queryFn: () => stockApi.getStockLedger({ page, size: 20, type: typeFilter, search }),
   })
 
   const columns: ColumnsType<StockTransaction> = [

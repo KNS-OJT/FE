@@ -6,9 +6,7 @@ import { Card, Form, Select, Input, DatePicker, Button, Table, message } from 'a
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router'
-import type { PurchaseRequest, Supplier, PaginatedResponse } from '@/types'
-import { mockGetPurchaseRequests, mockGetSuppliers, mockCreatePO } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import { purchaseRequestApi, supplierApi, purchaseOrderApi } from '@/api'
 import { formatNumber } from '@/utils'
 import { PageHeader } from '@/components/common'
 
@@ -26,12 +24,8 @@ export function POCreatePage() {
   const { data: approvedPRs } = useQuery({
     queryKey: ['purchase-requests', 'approved-no-po'],
     queryFn: async () => {
-      try {
-        const res = await http.get('/purchase-requests', { params: { status: 'APPROVED', size: 100 } })
-        return (res.data as PaginatedResponse<PurchaseRequest>).content.filter(pr => !pr.hasPO)
-      } catch {
-        return (await mockGetPurchaseRequests(1, 100, 'APPROVED')).content.filter(pr => !pr.hasPO)
-      }
+      const res = await purchaseRequestApi.getPurchaseRequests(1, 100, 'APPROVED')
+      return res.content.filter((pr) => !pr.hasPO)
     },
   })
 
@@ -39,12 +33,8 @@ export function POCreatePage() {
   const { data: suppliers } = useQuery({
     queryKey: ['suppliers-active'],
     queryFn: async () => {
-      try {
-        const res = await http.get('/suppliers', { params: { size: 100 } })
-        return (res.data as PaginatedResponse<Supplier>).content.filter(s => s.isActive)
-      } catch {
-        return (await mockGetSuppliers(1, 100)).content.filter(s => s.isActive)
-      }
+      const res = await supplierApi.getSuppliers(1, 100)
+      return res.content.filter((s) => s.isActive)
     },
   })
 
@@ -57,19 +47,11 @@ export function POCreatePage() {
   }
 
   const createMutation = useMutation({
-    mutationFn: async (values: { purchaseRequestId: number; supplierId: number; expectedDeliveryDate?: string; note?: string }) => {
-      try {
-        const res = await http.post('/purchase-orders', {
-          ...values,
-          items: selectedPR?.items.map(i => ({ purchaseRequestItemId: i.purchaseRequestItemId, quantity: i.quantity })),
-        })
-        return res.data
-      } catch {
-        return await mockCreatePO({
-          ...values,
-          items: selectedPR?.items.map(i => ({ purchaseRequestItemId: i.purchaseRequestItemId, quantity: i.quantity })),
-        })
-      }
+    mutationFn: (values: { purchaseRequestId: number; supplierId: number; expectedDeliveryDate?: string; note?: string }) => {
+      return purchaseOrderApi.createPurchaseOrder({
+        ...values,
+        items: selectedPR?.items.map((i) => ({ purchaseRequestItemId: i.purchaseRequestItemId, quantity: i.quantity })) ?? [],
+      })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })

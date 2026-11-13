@@ -6,9 +6,8 @@ import { Card, Form, Input, Button, Table, Select, InputNumber, message, Popconf
 import { PlusOutlined, DeleteOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
-import type { Product, PaginatedResponse, PRItemFormData } from '@/types'
-import { mockGetProducts, mockCreatePR } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { PRItemFormData } from '@/types'
+import { productApi, purchaseRequestApi } from '@/api'
 import { PageHeader } from '@/components/common'
 
 interface PRFormValues {
@@ -25,29 +24,21 @@ export function PRCreatePage() {
   const { data: products } = useQuery({
     queryKey: ['products-active'],
     queryFn: async () => {
-      try {
-        const res = await http.get('/products', { params: { size: 200 } })
-        return (res.data as PaginatedResponse<Product>).content.filter(p => p.isActive)
-      } catch {
-        return (await mockGetProducts(1, 200)).content.filter(p => p.isActive)
-      }
+      const res = await productApi.getProducts(1, 200)
+      return res.content.filter(p => p.isActive)
     },
   })
 
   const createMutation = useMutation({
-    mutationFn: async (payload: { reason?: string; items: PRItemFormData[]; submit?: boolean }) => {
-      try {
-        const res = await http.post('/purchase-requests', { reason: payload.reason, items: payload.items })
-        if (payload.submit) {
-          await http.post(`/purchase-requests/${res.data.purchaseRequestId}/submit`)
-        }
-        return res.data
-      } catch {
-        return await mockCreatePR({ reason: payload.reason, items: payload.items })
-      }
-    },
+    mutationFn: (payload: { reason?: string; items: PRItemFormData[]; submit?: boolean }) =>
+      purchaseRequestApi.createPurchaseRequest({
+        reason: payload.reason,
+        items: payload.items,
+        submit: payload.submit,
+      }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['purchase-requests'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       message.success(variables.submit ? 'Tạo và gửi PR thành công' : 'Lưu PR nháp thành công')
       navigate('/purchase-requests')
     },

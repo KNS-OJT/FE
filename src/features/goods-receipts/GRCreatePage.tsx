@@ -6,9 +6,7 @@ import { Card, Form, Select, Input, Button, Table, InputNumber, message } from '
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router'
-import type { PurchaseOrder, PaginatedResponse } from '@/types'
-import { mockGetPurchaseOrders, mockGetPurchaseOrder, mockCreateGR } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import { purchaseOrderApi, goodsReceiptApi } from '@/api'
 import { formatNumber } from '@/utils'
 import { PageHeader } from '@/components/common'
 
@@ -38,29 +36,15 @@ export function GRCreatePage() {
   const { data: receivablePOs } = useQuery({
     queryKey: ['purchase-orders', 'receivable'],
     queryFn: async () => {
-      try {
-        const res = await http.get('/purchase-orders', { params: { size: 100 } })
-        return (res.data as PaginatedResponse<PurchaseOrder>).content
-          .filter(po => po.status === 'ORDERED' || po.status === 'PARTIALLY_RECEIVED')
-      } catch {
-        return (await mockGetPurchaseOrders(1, 100)).content
-          .filter(po => po.status === 'ORDERED' || po.status === 'PARTIALLY_RECEIVED')
-      }
+      const res = await purchaseOrderApi.getPurchaseOrders(1, 100)
+      return res.content.filter((po) => po.status === 'ORDERED' || po.status === 'PARTIALLY_RECEIVED')
     },
   })
 
   // Fetch selected PO detail
   const { data: selectedPO } = useQuery({
     queryKey: ['purchase-order', selectedPOId],
-    queryFn: async () => {
-      if (!selectedPOId) return null
-      try {
-        const res = await http.get(`/purchase-orders/${selectedPOId}`)
-        return res.data as PurchaseOrder
-      } catch {
-        return await mockGetPurchaseOrder(selectedPOId)
-      }
-    },
+    queryFn: () => (selectedPOId ? purchaseOrderApi.getPurchaseOrderById(selectedPOId) : null),
     enabled: !!selectedPOId,
   })
 
@@ -82,7 +66,7 @@ export function GRCreatePage() {
   }
 
   const createMutation = useMutation({
-    mutationFn: async (values: { purchaseOrderId: number; documentReference?: string; note?: string }) => {
+    mutationFn: (values: { purchaseOrderId: number; documentReference?: string; note?: string }) => {
       const payload = {
         ...values,
         items: grItems.filter(i => i.receivedQuantity > 0).map(i => ({
@@ -90,12 +74,7 @@ export function GRCreatePage() {
           receivedQuantity: i.receivedQuantity,
         })),
       }
-      try {
-        const res = await http.post('/goods-receipts', payload)
-        return res.data
-      } catch {
-        return await mockCreateGR(payload)
-      }
+      return goodsReceiptApi.createGoodsReceipt(payload)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goods-receipts'] })

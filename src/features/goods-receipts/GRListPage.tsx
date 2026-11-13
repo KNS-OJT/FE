@@ -6,9 +6,8 @@ import { Table, Button } from 'antd'
 import { PlusOutlined, EyeOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
-import type { GoodsReceipt, PaginatedResponse } from '@/types'
-import { mockGetGoodsReceipts } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { GoodsReceipt } from '@/types'
+import { goodsReceiptApi } from '@/api'
 import { formatDateTime } from '@/utils'
 import { GR_STATUS_LABELS, GR_STATUS_COLORS } from '@/constants'
 import { PageHeader, StatusTag } from '@/components/common'
@@ -20,14 +19,7 @@ export function GRListPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['goods-receipts', page],
-    queryFn: async () => {
-      try {
-        const res = await http.get('/goods-receipts', { params: { page, size: 20 } })
-        return res.data as PaginatedResponse<GoodsReceipt>
-      } catch {
-        return await mockGetGoodsReceipts(page, 20)
-      }
-    },
+    queryFn: () => goodsReceiptApi.getGoodsReceipts(page, 20),
   })
 
   const columns: ColumnsType<GoodsReceipt> = [

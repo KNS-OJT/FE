@@ -6,9 +6,8 @@ import { Card, Descriptions, Table, Button, Spin, Alert, message, Popconfirm, Mo
 import { ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router'
-import type { StockIssue, StockIssueItem } from '@/types'
-import { mockGetStockIssue } from '@/lib/mock-data'
-import { http } from '@/lib/http'
+import type { StockIssueItem } from '@/types'
+import { stockIssueApi } from '@/api'
 import { formatDateTime, formatNumber } from '@/utils'
 import { SI_STATUS_LABELS, SI_STATUS_COLORS } from '@/constants'
 import { PageHeader, StatusTag } from '@/components/common'
@@ -25,43 +24,26 @@ export function SIDetailPage() {
 
   const { data: si, isLoading } = useQuery({
     queryKey: ['stock-issue', id],
-    queryFn: async () => {
-      try {
-        const res = await http.get(`/stock-issues/${id}`)
-        return res.data as StockIssue
-      } catch {
-        return await mockGetStockIssue(Number(id))
-      }
-    },
+    queryFn: () => stockIssueApi.getStockIssueById(Number(id)),
     enabled: !!id,
   })
 
   const actionMutation = useMutation({
-    mutationFn: async (action: { type: string; reason?: string }) => {
-      try {
-        if (action.type === 'confirm') {
-          const res = await http.post(`/stock-issues/${id}/confirm`)
-          return res.data
-        }
-        if (action.type === 'reject') {
-          const res = await http.post(`/stock-issues/${id}/reject`, { reason: action.reason })
-          return res.data
-        }
-        if (action.type === 'cancel') {
-          const res = await http.post(`/stock-issues/${id}/cancel`)
-          return res.data
-        }
-      } catch {
-        message.info('(Mock) Thao tác thành công')
-      }
+    mutationFn: (action: { type: string; reason?: string }) => {
+      const issueId = Number(id)
+      if (action.type === 'confirm') return stockIssueApi.confirmStockIssue(issueId)
+      if (action.type === 'reject') return stockIssueApi.rejectStockIssue(issueId, action.reason ?? '')
+      return stockIssueApi.cancelStockIssue(issueId)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['stock-issue', id] })
       queryClient.invalidateQueries({ queryKey: ['stock-issues'] })
+      queryClient.invalidateQueries({ queryKey: ['stock-balances'] })
+      queryClient.invalidateQueries({ queryKey: ['stock-ledger'] })
       const msgs: Record<string, string> = {
-        confirm: 'Xác nhận xuất kho thành công — Tồn kho đã được cập nhật',
-        reject: 'Từ chối yêu cầu xuất thành công',
-        cancel: 'Hủy yêu cầu thành công',
+        confirm: 'Xác nhận xuất kho thành công — Tồn kho đã được trừ',
+        reject: 'Từ chối xuất kho thành công',
+        cancel: 'Hủy phiếu xuất kho thành công',
       }
       message.success(msgs[variables.type])
       setRejectModalOpen(false)
