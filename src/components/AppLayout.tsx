@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
-import { Button, Flex, Grid, Layout, Menu, Typography, type MenuProps } from 'antd';
+import { Button, Dropdown, Flex, Grid, Layout, Menu, Typography, type MenuProps } from 'antd';
 import {
-  AlertOutlined, AppstoreOutlined, BarChartOutlined, DatabaseOutlined, ExportOutlined, FileDoneOutlined,
-  FileTextOutlined, HistoryOutlined, ImportOutlined, LogoutOutlined, ShopOutlined, TagsOutlined, TeamOutlined,
+  AlertOutlined, AppstoreOutlined, BarChartOutlined, DatabaseOutlined, DownOutlined, ExportOutlined, FileDoneOutlined,
+  FileTextOutlined, HistoryOutlined, ImportOutlined, KeyOutlined, LogoutOutlined, ShopOutlined, TagsOutlined, TeamOutlined,
 } from '@ant-design/icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { env } from '@/config/env';
@@ -76,28 +76,39 @@ export function AppLayout() {
       <Layout>
         <Layout.Header style={{ borderBottom: `1px solid ${palette.line}`, lineHeight: 'normal' }}>
           <Flex justify="flex-end" align="center" gap={14} style={{ height: '100%' }}>
-            <Flex align="center" gap={10}>
-              <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: 999, background: '#E5E6FF', color: '#3F42A8', display: 'grid', placeItems: 'center', fontWeight: 600, fontSize: 13 }}>
-                {initials(user?.fullName)}
-              </span>
-              {screens.sm && (
-                <div style={{ lineHeight: 1.25 }}>
-                  <div style={{ fontWeight: 600 }}>{user?.fullName}</div>
-                  <Typography.Text type="secondary" style={{ fontSize: 12.5 }}>{user ? ROLE_LABELS[user.role] : ''}</Typography.Text>
-                </div>
-              )}
-            </Flex>
-            <Button
-              type="text"
-              icon={<LogoutOutlined />}
-              onClick={() => {
-                logout();
-                qc.clear();
-                nav('/login', { replace: true, state: null });
+            <Dropdown
+              trigger={['click']}
+              placement="bottomRight"
+              menu={{
+                items: [
+                  { key: 'password', icon: <KeyOutlined />, label: 'Đổi mật khẩu' },
+                  { key: 'logout', icon: <LogoutOutlined />, label: 'Đăng xuất', danger: true },
+                ],
+                onClick: ({ key }) => {
+                  if (key === 'password') nav('/account/password');
+                  if (key === 'logout') {
+                    logout();
+                    qc.clear();
+                    nav('/login', { replace: true, state: null });
+                  }
+                },
               }}
             >
-              Đăng xuất
-            </Button>
+              <Button type="text" aria-label="Menu tài khoản" style={{ height: 'auto', padding: '4px 8px' }}>
+                <Flex align="center" gap={10}>
+                  <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: 999, background: '#E5E6FF', color: '#3F42A8', display: 'grid', placeItems: 'center', fontWeight: 600, fontSize: 13 }}>
+                    {initials(user?.fullName)}
+                  </span>
+                  {screens.sm && (
+                    <div style={{ lineHeight: 1.25, textAlign: 'left' }}>
+                      <div style={{ fontWeight: 600 }}>{user?.fullName}</div>
+                      <Typography.Text type="secondary" style={{ fontSize: 12.5 }}>{user ? ROLE_LABELS[user.role] : ''}</Typography.Text>
+                    </div>
+                  )}
+                  <DownOutlined aria-hidden="true" style={{ fontSize: 11, color: palette.muted }} />
+                </Flex>
+              </Button>
+            </Dropdown>
           </Flex>
         </Layout.Header>
         <Layout.Content style={{ padding: screens.md ? '28px 32px 40px' : '20px 16px 32px', maxWidth: 1360, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>

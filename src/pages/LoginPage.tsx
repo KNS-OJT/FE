@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
-import { Alert, Button, Form, Grid, Input, Typography } from 'antd';
+import { Alert, Button, Form, Grid, Input, Modal, Typography } from 'antd';
 import { login } from '@/api/auth';
 import { useAuth } from '@/auth/useAuth';
 import { env } from '@/config/env';
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [form] = Form.useForm<{ username: string; password: string }>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
   const to = safeRedirect((loc.state as { from?: unknown } | null)?.from);
 
   if (user) return <Navigate to={to} replace />;
@@ -79,10 +80,19 @@ export default function LoginPage() {
             <Form.Item name="password" label="Mật khẩu" rules={[{ required: true, message: 'Nhập mật khẩu' }, { max: 72 }]}>
               <Input.Password autoComplete="current-password" />
             </Form.Item>
+            <div style={{ textAlign: 'right', marginTop: -8 }}>
+              <Button type="link" size="small" style={{ padding: 0 }} onClick={() => setForgotOpen(true)}>Quên mật khẩu?</Button>
+            </div>
             <Button type="primary" htmlType="submit" block loading={loading} style={{ marginTop: 8, height: 46 }}>
               Đăng nhập
             </Button>
           </Form>
+          {/* Không gọi API, không có ô nhập email: để không ai dò được tài khoản nào tồn tại. */}
+          <Modal open={forgotOpen} title="Quên mật khẩu" onCancel={() => setForgotOpen(false)} footer={<Button type="primary" onClick={() => setForgotOpen(false)}>Đã hiểu</Button>}>
+            <p style={{ margin: 0 }}>
+              Hệ thống nội bộ không tự khôi phục mật khẩu qua email. Liên hệ Quản lý để được đặt lại mật khẩu, sau đó đổi mật khẩu ngay khi đăng nhập.
+            </p>
+          </Modal>
         </div>
       </main>
     </div>

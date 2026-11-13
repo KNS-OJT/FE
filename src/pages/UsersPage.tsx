@@ -3,7 +3,7 @@ import { palette } from '@/theme';
 import { SearchOutlined } from '@ant-design/icons';
 import { Pill } from '@/components/StatusTag';
 import { applyFieldErrors, validated } from '@/lib/validate';
-import { App, Button, Form, Input, Modal, Popconfirm, Select, Table } from 'antd';
+import { App, Button, Form, Input, Modal, Popconfirm, Select, Table, Tooltip } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { usersApi, type User, type UserCreate } from '@/api/users';
 import { ROLES, ROLE_LABELS, isRole, type Role } from '@/auth/roles';
@@ -14,6 +14,10 @@ import { useDebounced } from '@/components/useDebounced';
 import { useAuth } from '@/auth/useAuth';
 import { errMsg, toApiError } from '@/lib/errors';
 import { fmtDateTime } from '@/lib/format';
+import { validatePassword } from '@/lib/password';
+import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter';
+
+type CreateFormValues = UserCreate & { confirmPassword: string };
 
 const roleOptions = ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }));
 
@@ -27,7 +31,8 @@ export default function UsersPage() {
   const list = useQuery({ queryKey: ['users', { dq, page, size }], queryFn: () => usersApi.list({ q: dq || undefined, page, size }) });
   const [creating, setCreating] = useState(false);
   const [roleFor, setRoleFor] = useState<User | null>(null);
-  const [form] = Form.useForm<UserCreate>();
+  const [form] = Form.useForm<CreateFormValues>();
+  const watchedPassword = Form.useWatch('password', form);
   const [roleForm] = Form.useForm<{ role: Role }>();
   const invalidate = () => qc.invalidateQueries({ queryKey: ['users'] });
 
@@ -75,7 +80,7 @@ export default function UsersPage() {
           { title: 'Đăng nhập cuối', dataIndex: 'lastLoginAt', render: fmtDateTime },
           { title: 'Ngày tạo', dataIndex: 'createdAt', render: fmtDateTime },
           {
-            title: 'Thao tác', key: 'act', width: 200, fixed: 'right',
+            title: 'Thao tác', key: 'act', width: 340, fixed: 'right',
             render: (_, u) =>
               u.id === me?.userId ? <Pill tone="neutral">Tài khoản của bạn</Pill> : (
                 <>
@@ -83,17 +88,39 @@ export default function UsersPage() {
                   <Popconfirm title={`Khóa tài khoản ${u.username}?`} description="Tài khoản bị khóa sẽ không đăng nhập được." okText="Khóa" cancelText="Không" okButtonProps={{ danger: true }} onConfirm={() => lock.mutateAsync(u.id)} disabled={!u.active}>
                     <Button type="link" size="small" danger disabled={!u.active}>Khóa</Button>
                   </Popconfirm>
+                  {/* Chờ BE: POST /api/users/{id}/reset-password */}
+                  <Tooltip title="Backend chưa có API">
+                    <Button type="link" size="small" disabled>Đặt lại mật khẩu</Button>
+                  </Tooltip>
                 </>
               ),
           },
         ]}
       />
-      <Modal open={creating} title="Tạo tài khoản" okText="Tạo" cancelText="Hủy" confirmLoading={create.isPending} onCancel={() => setCreating(false)} onOk={async () => { const v = await validated(form); if (v) create.mutate(v); }} forceRender>
+      <Modal open={creating} title="Tạo tài khoản" okText="Tạo" cancelText="Hủy" confirmLoading={create.isPending} onCancel={() => setCreating(false)} onOk={async () => {
+        const v = await validated(form);
+        // Dựng body tường minh: không để `confirmPassword` (chỉ dùng ở giao diện) đi lên BE.
+        if (v) create.mutate({ username: v.username, password: v.password, fullName: v.fullName, email: v.email ?? '', role: v.role });
+      }} forceRender>
         <Form form={form} layout="vertical" autoComplete="off">
           <Form.Item name="username" label="Tên đăng nhập" rules={[{ required: true, message: 'Bắt buộc' }, { pattern: /^[A-Za-z0-9._-]{3,100}$/, message: '3–100 ký tự: chữ, số, . _ -' }]}>
             <Input autoComplete="off" />
           </Form.Item>
-          <Form.Item name="password" label="Mật khẩu ban đầu" rules={[{ required: true, message: 'Bắt buộc' }, { min: 8, max: 72, message: 'Mật khẩu 8–72 ký tự' }]}>
+          <Form.Item
+            name="password"
+            label="Mật khẩu ban đầu"
+            dependencies={['username']}
+            rules={[{ required: true, message: 'Bắt buộc' }, ({ getFieldValue }) => ({ validator: (_, v: string | undefined) => validatePassword(v, getFieldValue('username')) })]}
+            extra={<PasswordStrengthMeter value={watchedPassword} />}
+          >
+            <Input.Password autoComplete="new-password" />
+          </Form.Item>
+          <Form.Item
+            name="confirmPassword"
+            label="Nhập lại mật khẩu"
+            dependencies={['password']}
+            rules={[{ required: true, message: 'Nhập lại mật khẩu' }, ({ getFieldValue }) => ({ validator: (_, v: string | undefined) => (!v || v === getFieldValue('password') ? Promise.resolve() : Promise.reject(new Error('Mật khẩu nhập lại không khớp'))) })]}
+          >
             <Input.Password autoComplete="new-password" />
           </Form.Item>
           <Form.Item name="fullName" label="Họ tên" rules={[{ required: true, whitespace: true, message: 'Bắt buộc' }, { max: 150 }]}><Input /></Form.Item>

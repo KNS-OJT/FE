@@ -20,6 +20,7 @@ import IssueFormPage from '@/pages/IssueFormPage';
 import IssueDetailPage from '@/pages/IssueDetailPage';
 import { ReceiptDetailPage, ReceiptFormPage, ReceiptListPage } from '@/pages/ReceiptPages';
 import UsersPage from '@/pages/UsersPage';
+import ChangePasswordPage from '@/pages/ChangePasswordPage';
 import type { Permission } from '@/auth/permissions';
 
 const guard = (perm: Permission, children: { path?: string; index?: boolean; element: React.ReactNode }[]) => ({
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { path: '/403', element: <ForbiddenPage /> },
+          { path: '/account/password', element: <ChangePasswordPage /> },
           guard('dashboard:view', [{ index: true, element: <DashboardPage /> }]),
           guard('category:view', [{ path: '/categories', element: <CategoriesPage /> }]),
           guard('product:view', [{ path: '/products', element: <ProductsPage /> }]),
