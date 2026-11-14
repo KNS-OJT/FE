@@ -24,9 +24,18 @@ export default [
   {
     files: ['**/*.{js,ts,tsx}'],
     rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-new-func': 'error',
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'localStorage',
+          message: 'Do not store sensitive data in localStorage; use src/auth/session.ts.',
+        },
+      ],
       'no-restricted-syntax': [
         'error',
         {
@@ -38,6 +47,10 @@ export default [
           selector:
             'Property[key.name="dangerouslySetInnerHTML"], Property[key.value="dangerouslySetInnerHTML"]',
           message: 'Do not inject HTML through element props.',
+        },
+        {
+          selector: 'MemberExpression[property.name="innerHTML"]',
+          message: 'Do not assign innerHTML (XSS).',
         },
       ],
     },
