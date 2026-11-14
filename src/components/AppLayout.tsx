@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router';
-import { Button, Dropdown, Flex, Grid, Layout, Menu, Typography, type MenuProps } from 'antd';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router';
+import { Button, Drawer, Dropdown, Flex, Grid, Layout, Menu, Typography, type MenuProps } from 'antd';
 import {
   AlertOutlined, AppstoreOutlined, BarChartOutlined, DatabaseOutlined, DownOutlined, ExportOutlined, FileDoneOutlined,
-  FileTextOutlined, HistoryOutlined, ImportOutlined, KeyOutlined, LogoutOutlined, ShopOutlined, TagsOutlined, TeamOutlined,
+  FileTextOutlined, HistoryOutlined, ImportOutlined, KeyOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, ShopOutlined, TagsOutlined, TeamOutlined,
 } from '@ant-design/icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { env } from '@/config/env';
@@ -49,33 +49,73 @@ export function AppLayout() {
   const loc = useLocation();
   const qc = useQueryClient();
   const screens = Grid.useBreakpoint();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const isDesktop = !!screens.lg;
+  const inlineCollapsed = isDesktop && collapsed;
+
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+    // Đóng drawer khi route đổi, kể cả điều hướng từ dropdown hoặc nút Back.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMobileOpen(false);
+  }, [loc.pathname]);
 
   const items = useMemo<MenuProps['items']>(
     () =>
       NAV.flatMap((n): NonNullable<MenuProps['items']> => {
         if ('group' in n) {
           const children = n.items.filter((l) => can(l.perm)).map((l) => ({ key: l.key, label: l.label, icon: l.icon }));
-          return children.length ? [{ type: 'group' as const, key: n.group, label: n.group, children }] : [];
+          if (!children.length) return [];
+          return inlineCollapsed
+            ? [{ type: 'divider', key: n.group }, ...children]
+            : [{ type: 'group', key: n.group, label: n.group, children }];
         }
         return can(n.perm) ? [{ key: n.key, label: n.label, icon: n.icon }] : [];
       }),
-    [can],
+    [can, inlineCollapsed],
   );
   const selected = LEAVES.filter((k) => (k === '/' ? loc.pathname === '/' : loc.pathname === k || loc.pathname.startsWith(k + '/')))
     .sort((a, b) => b.length - a.length)[0];
 
+  const sidebar = (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Flex align="center" style={{ height: 64, flexShrink: 0 }}>
+        <Link to="/" aria-label={`${env.appName} — Tổng quan`} style={{ display: 'flex', alignItems: 'center', justifyContent: inlineCollapsed ? 'center' : undefined, gap: 10, height: '100%', flex: 1, minWidth: 0, padding: inlineCollapsed ? 0 : '0 24px', textDecoration: 'none' }}>
+          <span style={{ display: 'flex', flexShrink: 0 }}><BrandMark /></span>
+          {!inlineCollapsed && <span style={{ fontWeight: 700, fontSize: 16, color: palette.ink }}>{env.appName}</span>}
+        </Link>
+        {!isDesktop && <Button type="text" aria-label="Đóng thanh bên" icon={<MenuFoldOutlined />} onClick={() => setMobileOpen(false)} style={{ marginRight: 8, flexShrink: 0 }} />}
+      </Flex>
+      <nav id="main-navigation" aria-label="Điều hướng chính" className="sider-scroll">
+        <Menu mode="inline" inlineCollapsed={inlineCollapsed} selectedKeys={selected ? [selected] : []} items={items} onClick={({ key }) => { setMobileOpen(false); nav(key); }} style={{ background: 'transparent', borderInlineEnd: 0, paddingBottom: 24 }} />
+      </nav>
+    </div>
+  );
+
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Layout.Sider width={248} breakpoint="lg" collapsedWidth={0} zeroWidthTriggerStyle={{ top: 12, borderRadius: '0 8px 8px 0', background: palette.primary }} style={{ borderRight: `1px solid ${palette.line}` }}>
-        <Flex align="center" gap={10} style={{ padding: '20px 24px 8px' }}>
-          <BrandMark />
-          <span style={{ fontWeight: 700, fontSize: 16, color: palette.ink }}>{env.appName}</span>
-        </Flex>
-        <Menu mode="inline" selectedKeys={selected ? [selected] : []} items={items} onClick={({ key }) => nav(key)} style={{ borderInlineEnd: 0, paddingBottom: 24 }} />
-      </Layout.Sider>
-      <Layout>
-        <Layout.Header style={{ borderBottom: `1px solid ${palette.line}`, lineHeight: 'normal' }}>
-          <Flex justify="flex-end" align="center" gap={14} style={{ height: '100%' }}>
+    <Layout style={{ height: '100vh', overflow: 'hidden' }}>
+      {isDesktop ? (
+        <Layout.Sider width={248} collapsedWidth={72} collapsed={collapsed} trigger={null} style={{ height: '100vh', borderRight: `1px solid ${palette.line}` }}>
+          {sidebar}
+        </Layout.Sider>
+      ) : (
+        <Drawer placement="left" width={264} closable={false} forceRender open={mobileOpen} onClose={() => setMobileOpen(false)} aria-label="Thanh điều hướng" styles={{ body: { padding: 0, background: palette.sidebar } }}>
+          {sidebar}
+        </Drawer>
+      )}
+      <Layout style={{ minWidth: 0 }}>
+        <Layout.Header style={{ borderBottom: `1px solid ${palette.line}`, lineHeight: 'normal', flexShrink: 0 }}>
+          <Flex justify="space-between" align="center" gap={14} style={{ height: '100%' }}>
+            <Button
+              type="text"
+              aria-label={isDesktop ? (collapsed ? 'Mở thanh bên' : 'Thu gọn thanh bên') : (mobileOpen ? 'Đóng thanh bên' : 'Mở thanh bên')}
+              aria-expanded={isDesktop ? !collapsed : mobileOpen}
+              aria-controls="main-navigation"
+              icon={(isDesktop ? !collapsed : mobileOpen) ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+              onClick={() => isDesktop ? setCollapsed((value) => !value) : setMobileOpen((value) => !value)}
+            />
             <Dropdown
               trigger={['click']}
               placement="bottomRight"
@@ -111,9 +151,11 @@ export function AppLayout() {
             </Dropdown>
           </Flex>
         </Layout.Header>
-        <Layout.Content style={{ padding: screens.md ? '28px 32px 40px' : '20px 16px 32px', maxWidth: 1360, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
-          <Outlet />
-        </Layout.Content>
+        <div ref={contentRef} style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain' }}>
+          <Layout.Content style={{ padding: screens.md ? '28px 32px 40px' : '20px 16px 32px', maxWidth: 1360, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+            <Outlet />
+          </Layout.Content>
+        </div>
       </Layout>
     </Layout>
   );

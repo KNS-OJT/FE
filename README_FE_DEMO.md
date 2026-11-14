@@ -82,8 +82,9 @@ Tài liệu BE chưa ghi đủ tên trường nên FE đọc theo **danh sách t
 | PR | `id`, `requestCode`/`code`, `requesterId`, `requesterName`, `reason`, `status`, `createdAt`, `submittedAt`, `reviewedBy`, `reviewedByName`, `reviewedAt`, `reviewReason`, `cancelReason`, `items[]{id, productId, sku, productName, unit, quantity, note}` |
 | Body tạo/sửa PR | `{ reason, items: [{ productId, quantity, note }] }` |
 | Từ chối / hủy PR | `{ reason, reviewReason }` / `{ reason, cancelReason }` |
-| PO | `id`, `orderCode`/`code`, `purchaseRequestId`, `supplierId`, `supplierName`, `orderDate`, `expectedDeliveryDate`, `status`, `items[]{id, purchaseRequestItemId, productId, quantity, receivedQuantity}` |
-| Body tạo PO | `{ purchaseRequestId, supplierId, expectedDeliveryDate(YYYY-MM-DD), note, items: [{ purchaseRequestItemId, productId, quantity }] }` |
+| PO (theo `PoResponse` hiện tại) | `id`, `orderCode`, `purchaseRequestId`, `supplierId`, `supplierName`, `orderDate`, `expectedDeliveryDate`, `status`, `note`, `items[]{id, prItemId, productId, quantity}`; BE chưa trả `receivedQuantity` |
+| Body tạo PO | `{ purchaseRequestId, supplierId, expectedDeliveryDate(YYYY-MM-DD hoặc null), items: [{ prItemId, quantity }] }` |
+| Body sửa PO | `{ supplierId, expectedDeliveryDate(YYYY-MM-DD hoặc null), items: [{ prItemId, quantity }] }` — không gửi `purchaseRequestId`; BE chưa nhận ghi chú trong body tạo/sửa PO |
 | Sản phẩm | `id`, `sku`, `name`, `categoryId`, `categoryName`, `unit`, `active`, `createdAt` |
 | Tồn kho | `productId`, `sku`, `productName`, `categoryName`, `unit`, `quantity`, `minimumStock`, `updatedAt` |
 | Sổ kho | `id`, `createdAt`, `productId`, `sku`, `productName`, `transactionType`/`type`, `quantity`, `balanceAfter`, `createdBy`, `note` |

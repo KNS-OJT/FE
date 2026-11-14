@@ -52,24 +52,24 @@ export interface PoInput {
   purchaseRequestId: number;
   supplierId: number;
   expectedDeliveryDate?: string | null; // YYYY-MM-DD, từ hôm nay trở đi
-  note?: string;
-  items: { purchaseRequestItemId: number; productId: number; quantity: number }[];
+  items: { prItemId: number; quantity: number }[];
 }
-const body = (v: PoInput) => ({
-  purchaseRequestId: v.purchaseRequestId,
-  prId: v.purchaseRequestId,
+export type PoUpdateInput = Omit<PoInput, 'purchaseRequestId'>;
+
+// PoUpdateRequest không nhận purchaseRequestId; PR của PO không được đổi khi sửa.
+// Chỉ gửi trường có trong DTO vì BE từ chối trường lạ (UNKNOWN_FIELD).
+const updateBody = (v: PoUpdateInput) => ({
   supplierId: v.supplierId,
   expectedDeliveryDate: v.expectedDeliveryDate || null,
-  note: v.note?.trim() || null,
-  items: v.items.map((i) => ({ purchaseRequestItemId: i.purchaseRequestItemId, prItemId: i.purchaseRequestItemId, productId: i.productId, quantity: i.quantity })),
+  items: v.items.map((i) => ({ prItemId: i.prItemId, quantity: i.quantity })),
 });
 
 export const poApi = {
   /** GET /api/po?status=&page=&size= */
   list: async (p: { status?: string; page: number; size: number }) => toPage(await api.get<unknown>('/po', p), mapPo),
   get: async (id: number) => mapPo(asObj(await api.get<unknown>(`/po/${id}`))),
-  create: async (v: PoInput) => mapPo(asObj(await api.post<unknown>('/po', body(v)))),
-  update: async (id: number, v: PoInput) => mapPo(asObj(await api.put<unknown>(`/po/${id}`, body(v)))),
+  create: async (v: PoInput) => mapPo(asObj(await api.post<unknown>('/po', { purchaseRequestId: v.purchaseRequestId, ...updateBody(v) }))),
+  update: async (id: number, v: PoUpdateInput) => mapPo(asObj(await api.put<unknown>(`/po/${id}`, updateBody(v)))),
   /** POST /api/po/{id}/order: DRAFT → ORDERED */
   order: (id: number) => api.post<unknown>(`/po/${id}/order`),
 };

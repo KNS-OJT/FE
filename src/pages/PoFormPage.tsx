@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { validated } from '@/lib/validate';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { Alert, App, Button, Card, DatePicker, Flex, Form, Input, InputNumber, Select, Space, Spin, Table } from 'antd';
+import { Alert, App, Button, Card, DatePicker, Flex, Form, InputNumber, Select, Space, Spin, Table } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { poApi, type PoInput } from '@/api/po';
@@ -13,7 +13,7 @@ import { ErrorAlert } from '@/components/States';
 import { errMsg } from '@/lib/errors';
 import { fmtNum } from '@/lib/format';
 
-type FormValues = { purchaseRequestId?: number; supplierId?: number; expectedDeliveryDate?: Dayjs | null; note?: string; qty: Record<string, number> };
+type FormValues = { purchaseRequestId?: number; supplierId?: number; expectedDeliveryDate?: Dayjs | null; qty: Record<string, number> };
 
 export default function PoFormPage() {
   const { id } = useParams();
@@ -36,7 +36,7 @@ export default function PoFormPage() {
 
   // BR-19: mỗi PR tối đa 1 PO → ẩn PR đã có PO.
   const prOptions = useMemo(() => {
-    const used = new Set((usedPr.data?.items ?? []).filter((p) => p.status !== 'CANCELED').map((p) => p.purchaseRequestId));
+    const used = new Set((usedPr.data?.items ?? []).map((p) => p.purchaseRequestId));
     return (approved.data?.items ?? []).filter((p) => !used.has(p.id)).map((p) => ({ value: p.id, label: `${p.code || `PR #${p.id}`} · ${p.requesterName || ''} · ${p.reason}` }));
   }, [approved.data, usedPr.data]);
 
@@ -46,13 +46,12 @@ export default function PoFormPage() {
         purchaseRequestId: existing.data.purchaseRequestId,
         supplierId: existing.data.supplierId,
         expectedDeliveryDate: existing.data.expectedDeliveryDate ? dayjs(existing.data.expectedDeliveryDate) : null,
-        note: existing.data.note,
-        qty: Object.fromEntries(existing.data.items.map((i) => [String(i.purchaseRequestItemId ?? i.productId), i.quantity])),
+        qty: Object.fromEntries(existing.data.items.map((i) => [String(i.purchaseRequestItemId), i.quantity])),
       });
     }
   }, [existing.data, form]);
   useEffect(() => {
-    if (pr.data && !editId) form.setFieldsValue({ purchaseRequestId: pr.data.id, qty: Object.fromEntries(pr.data.items.map((i) => [String(i.id || i.productId), i.quantity])) });
+    if (pr.data && !editId) form.setFieldsValue({ purchaseRequestId: pr.data.id, qty: Object.fromEntries(pr.data.items.map((i) => [String(i.id), i.quantity])) });
   }, [pr.data, editId, form]);
 
   const save = useMutation({
@@ -73,9 +72,12 @@ export default function PoFormPage() {
   });
 
   const onSave = async (order: boolean) => {
+    if (!pr.data || pr.isFetching || save.isPending) return;
     const v = await validated(form);
     if (!v) return;
-    const lines = (pr.data?.items ?? []).map((i) => ({ purchaseRequestItemId: i.id, productId: i.productId, quantity: v.qty?.[String(i.id || i.productId)] ?? 0 }));
+    if (pr.data.status !== 'APPROVED') return message.error('Chỉ lập PO từ đề nghị mua đã duyệt.');
+    if (pr.data.items.some((i) => !Number.isInteger(i.id) || i.id <= 0)) return message.error('Dữ liệu dòng đề nghị mua không hợp lệ. Vui lòng tải lại trang.');
+    const lines = pr.data.items.map((i) => ({ prItemId: i.id, quantity: v.qty?.[String(i.id)] ?? 0 }));
     if (!lines.some((l) => l.quantity > 0)) return message.error('PO phải có ít nhất một dòng với số lượng lớn hơn 0.');
     save.mutate({
       order,
@@ -83,7 +85,6 @@ export default function PoFormPage() {
         purchaseRequestId: v.purchaseRequestId!,
         supplierId: v.supplierId!,
         expectedDeliveryDate: v.expectedDeliveryDate ? v.expectedDeliveryDate.format('YYYY-MM-DD') : null,
-        note: v.note,
         items: lines.filter((l) => l.quantity > 0),
       },
     });
@@ -116,12 +117,11 @@ export default function PoFormPage() {
               <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isBefore(dayjs().startOf('day'))} />
             </Form.Item>
           </Flex>
-          <Form.Item name="note" label="Ghi chú" rules={[{ max: 500 }]}><Input.TextArea rows={2} /></Form.Item>
         </Card>
         <Card title="3. Dòng hàng" style={{ marginBottom: 16 }}>
-          {!prId ? <Alert type="info" message="Chọn PR để lấy dòng hàng." /> : pr.isLoading ? <Spin /> : (
+          {!prId ? <Alert type="info" message="Chọn PR để lấy dòng hàng." /> : pr.isLoading ? <Spin /> : pr.error ? <ErrorAlert error={pr.error} onRetry={() => pr.refetch()} /> : (
             <Table<PrItem>
-              rowKey={(r) => String(r.id || r.productId)}
+              rowKey={(r) => String(r.id)}
               dataSource={pr.data?.items ?? []}
               pagination={false}
               columns={[
@@ -132,7 +132,7 @@ export default function PoFormPage() {
                 {
                   title: 'SL đặt', key: 'qty', width: 180,
                   render: (_, r) => (
-                    <Form.Item noStyle name={['qty', String(r.id || r.productId)]}
+                    <Form.Item noStyle name={['qty', String(r.id)]}
                       rules={[{ type: 'number', min: 0, max: r.quantity, message: `Không vượt số đã duyệt (${fmtNum(r.quantity)})` }]}>
                       <InputNumber min={0} max={r.quantity} style={{ width: '100%' }} aria-label="Số lượng đặt" />
                     </Form.Item>
@@ -145,8 +145,8 @@ export default function PoFormPage() {
         <Flex justify="flex-end">
           <Space wrap>
             <Button onClick={() => nav(editId ? `/po/${editId}` : '/po')}>Hủy bỏ</Button>
-            <Button disabled={save.isPending || !prId} loading={save.isPending && !save.variables?.order} onClick={() => onSave(false)}>Lưu nháp</Button>
-            <Button type="primary" disabled={save.isPending || !prId} loading={save.isPending && !!save.variables?.order} onClick={() => onSave(true)}>Lưu & đặt hàng</Button>
+            <Button disabled={save.isPending || !pr.data || pr.isFetching || !!pr.error} loading={save.isPending && !save.variables?.order} onClick={() => onSave(false)}>Lưu nháp</Button>
+            <Button type="primary" disabled={save.isPending || !pr.data || pr.isFetching || !!pr.error} loading={save.isPending && !!save.variables?.order} onClick={() => onSave(true)}>Lưu & đặt hàng</Button>
           </Space>
         </Flex>
       </Form>
