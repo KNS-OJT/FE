@@ -7,6 +7,7 @@ import { Button, Flex, Input, Table, Tabs } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { stockApi, type StockRow } from '@/api/stock';
 import { PageHeader } from '@/components/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { ErrorAlert } from '@/components/States';
 import { usePaging } from '@/components/usePaging';
 import { useDebounced } from '@/components/useDebounced';
@@ -61,7 +62,15 @@ function StockTable({ low }: { low: boolean }) {
         scroll={{ x: 900 }}
         rowSelection={low && can('pr:create') ? { selectedRowKeys: selected.map((s) => s.productId), onChange: (_, rows) => setSelected(rows) } : undefined}
         onRow={(r) => ({ style: r.low ? { background: palette.sandSoft } : undefined })}
-        locale={{ emptyText: low ? 'Không có sản phẩm dưới mức tối thiểu' : 'Chưa có dữ liệu tồn kho' }}
+        locale={{
+          emptyText: low ? (
+            <EmptyState title="Không có sản phẩm dưới mức tối thiểu" hint="Tồn kho đang đủ so với ngưỡng đã đặt." />
+          ) : dq ? (
+            <EmptyState title="Không có sản phẩm phù hợp" hint="Thử SKU hoặc tên khác." />
+          ) : (
+            <EmptyState title="Chưa có dữ liệu tồn kho" hint="Tồn kho được tạo cùng sản phẩm, bắt đầu bằng 0." />
+          ),
+        }}
         columns={[
           { title: 'SKU', dataIndex: 'sku', render: (v) => <span className="sku">{v}</span> },
           { title: 'Sản phẩm', dataIndex: 'productName' },

@@ -7,6 +7,7 @@ import { App, Button, Flex, Form, Input, Modal, Select, Switch, Table } from 'an
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { suppliersApi, type Supplier, type SupplierInput } from '@/api/suppliers';
 import { PageHeader } from '@/components/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { ErrorAlert } from '@/components/States';
 import { usePaging } from '@/components/usePaging';
 import { useDebounced } from '@/components/useDebounced';
@@ -76,7 +77,14 @@ export default function SuppliersPage() {
         dataSource={list.data?.items ?? []}
         pagination={pagination(list.data?.totalElements ?? 0)}
         scroll={{ x: 1000 }}
-        locale={{ emptyText: 'Chưa có nhà cung cấp' }}
+        locale={{
+          emptyText:
+            dq || isActive !== undefined ? (
+              <EmptyState title="Không có nhà cung cấp phù hợp" hint="Thử từ khóa khác hoặc bỏ bộ lọc." />
+            ) : (
+              <EmptyState title="Chưa có nhà cung cấp" actionLabel={canManage ? 'Thêm nhà cung cấp' : undefined} onAction={() => open('new')} />
+            ),
+        }}
         columns={[
           { title: 'Tên nhà cung cấp', dataIndex: 'name' },
           { title: 'Người liên hệ', dataIndex: 'contactPerson', render: (v) => v || '—' },

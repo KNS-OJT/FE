@@ -10,6 +10,7 @@ import { grMock, receivedByPoItem, type GoodsReceipt, type GrItem } from '@/api/
 import { poApi, type PoItem } from '@/api/po';
 import { useProductMap } from '@/api/lookups';
 import { PageHeader } from '@/components/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { ReasonModal } from '@/components/ReasonModal';
 import { ErrorAlert, PendingApiBanner } from '@/components/States';
 import { StatusTag } from '@/components/StatusTag';
@@ -44,7 +45,16 @@ export function ReceiptListPage() {
           loading={list.isLoading}
           dataSource={list.data ?? []}
           onRow={(r) => ({ onClick: () => nav(`/receipts/${r.id}`), style: { cursor: 'pointer' } })}
-          locale={{ emptyText: 'Chưa có phiếu nhập' }}
+          locale={{
+            emptyText: (
+              <EmptyState
+                title="Chưa có phiếu nhập"
+                hint="Phiếu nhập được lập khi nhận hàng theo đơn đặt hàng."
+                actionLabel={can('gr:manage') && env.demoMockMissing ? 'Lập phiếu nhận hàng' : undefined}
+                onAction={() => nav('/receipts/new')}
+              />
+            ),
+          }}
           columns={[
             { title: 'Mã phiếu', dataIndex: 'code' },
             { title: 'PO', dataIndex: 'poCode' },

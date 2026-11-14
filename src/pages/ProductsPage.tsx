@@ -9,6 +9,7 @@ import { productsApi, type Product, type ProductCreate } from '@/api/products';
 import { categoriesApi } from '@/api/categories';
 import { useStockMap } from '@/api/lookups';
 import { PageHeader } from '@/components/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { ErrorAlert } from '@/components/States';
 import { usePaging } from '@/components/usePaging';
 import { useDebounced } from '@/components/useDebounced';
@@ -112,7 +113,14 @@ export default function ProductsPage() {
         dataSource={list.data?.items ?? []}
         pagination={pagination(list.data?.totalElements ?? 0)}
         scroll={{ x: 1000 }}
-        locale={{ emptyText: 'Chưa có sản phẩm' }}
+        locale={{
+          emptyText:
+            dq || categoryId ? (
+              <EmptyState title="Không có sản phẩm phù hợp" hint="Thử SKU hoặc tên khác, hoặc bỏ lọc nhóm hàng." />
+            ) : (
+              <EmptyState title="Chưa có sản phẩm" hint="Sản phẩm mới bắt đầu với tồn kho bằng 0." actionLabel={canManage ? 'Thêm sản phẩm' : undefined} onAction={() => openForm('new')} />
+            ),
+        }}
         columns={[
           { title: 'SKU', dataIndex: 'sku', width: 170, render: (v) => <span className="sku">{v}</span> },
           { title: 'Tên sản phẩm', dataIndex: 'name' },

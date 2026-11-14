@@ -5,6 +5,7 @@ import { App, Button, Form, Input, Modal, Switch, Table } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { categoriesApi, type Category, type CategoryInput } from '@/api/categories';
 import { PageHeader } from '@/components/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { ErrorAlert } from '@/components/States';
 import { useAuth } from '@/auth/useAuth';
 import { errMsg, toApiError } from '@/lib/errors';
@@ -54,7 +55,9 @@ export default function CategoriesPage() {
         loading={q.isLoading}
         dataSource={q.data ?? []}
         pagination={{ pageSize: 20, showTotal: (t) => `Tổng ${t}` }}
-        locale={{ emptyText: 'Chưa có nhóm hàng' }}
+        locale={{
+          emptyText: <EmptyState title="Chưa có nhóm hàng" hint="Nhóm hàng giúp lọc và tìm sản phẩm nhanh hơn." actionLabel={canManage ? 'Thêm nhóm hàng' : undefined} onAction={() => open('new')} />,
+        }}
         columns={[
           { title: 'Tên nhóm', dataIndex: 'name' },
           { title: 'Mô tả', dataIndex: 'description', render: (v) => v || '—' },

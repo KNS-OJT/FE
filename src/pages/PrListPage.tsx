@@ -6,6 +6,7 @@ import { Button, Flex, Input, Select, Table, Tabs } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { prApi, type PurchaseRequest } from '@/api/pr';
 import { PageHeader } from '@/components/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { ErrorAlert } from '@/components/States';
 import { StatusTag } from '@/components/StatusTag';
 import { usePaging } from '@/components/usePaging';
@@ -64,7 +65,16 @@ export default function PrListPage() {
         pagination={pagination(list.data?.totalElements ?? 0)}
         scroll={{ x: 900 }}
         onRow={(r) => ({ onClick: () => nav(`/pr/${r.id}`), style: { cursor: 'pointer' } })}
-        locale={{ emptyText: 'Chưa có đề nghị mua' }}
+        locale={{
+          emptyText:
+            dq || (status && tab !== 'pending') ? (
+              <EmptyState title="Không có kết quả phù hợp" hint="Thử từ khóa khác hoặc bỏ bộ lọc trạng thái." />
+            ) : tab === 'pending' ? (
+              <EmptyState title="Không có đề nghị nào chờ bạn duyệt" hint="Đề nghị mua được gửi sẽ xuất hiện ở đây." />
+            ) : (
+              <EmptyState title="Chưa có đề nghị mua" hint="Đề nghị mua được tạo sẽ hiện ở đây." actionLabel={can('pr:create') ? 'Tạo đề nghị mua' : undefined} onAction={() => nav('/pr/new')} />
+            ),
+        }}
         columns={[
           { title: 'Mã PR', dataIndex: 'code', render: (v, r) => <a href={`/pr/${r.id}`} onClick={(e) => e.preventDefault()}>{v || `PR #${r.id}`}</a> },
           { title: 'Người yêu cầu', dataIndex: 'requesterName', render: (v, r) => v || `#${r.requesterId}` },

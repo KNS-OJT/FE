@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { poApi, type PurchaseOrder } from '@/api/po';
 import { useSupplierMap } from '@/api/lookups';
 import { PageHeader } from '@/components/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { ErrorAlert } from '@/components/States';
 import { StatusTag } from '@/components/StatusTag';
 import { usePaging } from '@/components/usePaging';
@@ -39,7 +40,13 @@ export default function PoListPage() {
         pagination={pagination(list.data?.totalElements ?? 0)}
         scroll={{ x: 900 }}
         onRow={(r) => ({ onClick: () => nav(`/po/${r.id}`), style: { cursor: 'pointer' } })}
-        locale={{ emptyText: 'Chưa có đơn đặt hàng' }}
+        locale={{
+          emptyText: status ? (
+            <EmptyState title="Không có đơn ở trạng thái này" hint="Chọn trạng thái khác hoặc bỏ bộ lọc." />
+          ) : (
+            <EmptyState title="Chưa có đơn đặt hàng" hint="Đơn đặt hàng được lập từ đề nghị mua đã duyệt." actionLabel={can('po:manage') ? 'Tạo đơn đặt hàng' : undefined} onAction={() => nav('/po/new')} />
+          ),
+        }}
         columns={[
           { title: 'Mã PO', dataIndex: 'code', render: (v, r) => <a href={`/po/${r.id}`} onClick={(e) => e.preventDefault()}>{v || `PO #${r.id}`}</a> },
           { title: 'PR tham chiếu', key: 'pr', render: (_, r) => r.prCode || `PR #${r.purchaseRequestId}` },

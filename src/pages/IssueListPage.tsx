@@ -3,6 +3,7 @@ import { Button, Table } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { issuesApi, type StockIssue } from '@/api/stockIssues';
 import { PageHeader } from '@/components/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { ErrorAlert, PendingApiBanner } from '@/components/States';
 import { StatusTag } from '@/components/StatusTag';
 import { usePaging } from '@/components/usePaging';
@@ -26,7 +27,11 @@ export default function IssueListPage() {
         dataSource={list.data?.items ?? []}
         pagination={pagination(list.data?.totalElements ?? 0)}
         onRow={(r) => ({ onClick: () => nav(`/issues/${r.id}`), style: { cursor: 'pointer' } })}
-        locale={{ emptyText: 'Chưa có phiếu xuất' }}
+        locale={{
+          emptyText: (
+            <EmptyState title="Chưa có phiếu xuất" hint="Yêu cầu cấp hàng từ kho bạn tạo sẽ hiện ở đây." actionLabel={can('issue:create') ? 'Tạo yêu cầu xuất' : undefined} onAction={() => nav('/issues/new')} />
+          ),
+        }}
         columns={[
           { title: 'Mã phiếu', dataIndex: 'code', render: (v, r) => <a href={`/issues/${r.id}`} onClick={(e) => e.preventDefault()}>{v || `SI #${r.id}`}</a> },
           { title: 'Lý do', dataIndex: 'reason', ellipsis: true },

@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ledgerApi, type LedgerRow } from '@/api/ledger';
 import { useProductMap, useUserMap } from '@/api/lookups';
 import { PageHeader } from '@/components/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { ErrorAlert } from '@/components/States';
 import { usePaging } from '@/components/usePaging';
 import { useDebounced } from '@/components/useDebounced';
@@ -54,7 +55,14 @@ export default function LedgerPage() {
         dataSource={list.data?.items ?? []}
         pagination={pagination(list.data?.totalElements ?? 0)}
         scroll={{ x: 1000 }}
-        locale={{ emptyText: 'Chưa có giao dịch kho' }}
+        locale={{
+          emptyText:
+            productId || type || dq ? (
+              <EmptyState title="Không có giao dịch phù hợp" hint="Thử bỏ bớt bộ lọc." />
+            ) : (
+              <EmptyState title="Chưa có giao dịch kho" hint="Giao dịch xuất hiện khi phiếu nhập, xuất hoặc điều chỉnh được xác nhận." />
+            ),
+        }}
         columns={[
           { title: 'Thời gian', dataIndex: 'createdAt', width: 150, render: fmtDateTime },
           { title: 'SKU', dataIndex: 'sku', render: (v, r) => <span className="sku">{v || products.data?.get(r.productId)?.sku || `#${r.productId}`}</span> },
