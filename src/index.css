@@ -42,3 +42,6 @@ body {
 .metric:hover { background-color: #F6F9FB; }
 .tile { background: #fff; border: 1px solid #DCE5EB; border-radius: 12px; padding: 16px; display: flex; gap: 14px; align-items: center; transition: border-color .15s; }
 .tile:hover { border-color: #81A6C6; }
+
+.demo-chip { display: inline-flex; gap: 8px; align-items: center; padding: 7px 12px; border-radius: 999px; background: #fff; border: 1px solid #DCE5EB; font-size: 13px; transition: border-color .15s; }
+.demo-chip:hover { border-color: #81A6C6; }
