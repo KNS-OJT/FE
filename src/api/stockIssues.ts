@@ -35,10 +35,19 @@ export interface IssueInput {
 }
 const body = (v: IssueInput) => ({ reason: v.reason.trim(), note: v.note?.trim() || null, items: v.items.map((i) => ({ productId: i.productId, quantity: i.quantity })) });
 
-/** BE mới có bản nháp: danh sách/chi tiết/tạo/sửa. Chưa có gửi, xác nhận, từ chối, hủy. */
 export const issuesApi = {
-  list: async (p: { page: number; size: number }) => toPage(await api.get<unknown>('/stock-issues', p), map),
+  /** GET /api/stock-issues?page=&size=&status= */
+  list: async (p: { page: number; size: number; status?: string }) => toPage(await api.get<unknown>('/stock-issues', p), map),
+  /** GET /api/stock-issues/{id} */
   get: async (id: number) => map(asObj(await api.get<unknown>(`/stock-issues/${id}`))),
+  /** POST /api/stock-issues */
   create: async (v: IssueInput) => map(asObj(await api.post<unknown>('/stock-issues', body(v)))),
+  /** PUT /api/stock-issues/{id} */
   update: async (id: number, v: IssueInput) => map(asObj(await api.put<unknown>(`/stock-issues/${id}`, body(v)))),
+  /** POST /api/stock-issues/{id}/confirm — Warehouse Staff xác nhận xuất kho (trừ tồn) */
+  confirm: async (id: number) => map(asObj(await api.post<unknown>(`/stock-issues/${id}/confirm`))),
+  /** POST /api/stock-issues/{id}/reject { reason } — Warehouse Staff từ chối */
+  reject: async (id: number, reason: string) => map(asObj(await api.post<unknown>(`/stock-issues/${id}/reject`, { reason }))),
+  /** POST /api/stock-issues/{id}/cancel { reason } — Người tạo hủy */
+  cancel: async (id: number, reason: string) => map(asObj(await api.post<unknown>(`/stock-issues/${id}/cancel`, { reason }))),
 };

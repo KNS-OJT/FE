@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { Button, Drawer, Dropdown, Flex, Grid, Layout, Menu, Typography, type MenuProps } from 'antd';
 import {
-  AlertOutlined, AppstoreOutlined, BarChartOutlined, DatabaseOutlined, DownOutlined, ExportOutlined, FileDoneOutlined,
+  AlertOutlined, AppstoreOutlined, AuditOutlined, BarChartOutlined, DatabaseOutlined, DownOutlined, ExportOutlined, FileDoneOutlined,
   FileTextOutlined, HistoryOutlined, ImportOutlined, KeyOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, ShopOutlined, TagsOutlined, TeamOutlined,
 } from '@ant-design/icons';
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,6 +26,7 @@ const NAV: (Leaf | Group)[] = [
   { group: 'Nhập / Xuất', items: [
     { key: '/receipts', label: 'Phiếu nhập kho', icon: <ImportOutlined />, perm: 'gr:view' },
     { key: '/issues', label: 'Phiếu xuất kho', icon: <ExportOutlined />, perm: 'issue:view' },
+    { key: '/adjustments', label: 'Kiểm kê & điều chỉnh', icon: <AuditOutlined />, perm: 'adjustment:view' },
   ] },
   { group: 'Kho', items: [
     { key: '/stock', label: 'Tồn kho', icon: <DatabaseOutlined />, perm: 'stock:view' },

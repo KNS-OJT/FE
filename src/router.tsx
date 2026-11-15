@@ -19,6 +19,7 @@ import IssueListPage from '@/pages/IssueListPage';
 import IssueFormPage from '@/pages/IssueFormPage';
 import IssueDetailPage from '@/pages/IssueDetailPage';
 import { ReceiptDetailPage, ReceiptFormPage, ReceiptListPage } from '@/pages/ReceiptPages';
+import { AdjustmentDetailPage, AdjustmentFormPage, AdjustmentListPage } from '@/pages/AdjustmentPages';
 import UsersPage from '@/pages/UsersPage';
 import ChangePasswordPage from '@/pages/ChangePasswordPage';
 import type { Permission } from '@/auth/permissions';
@@ -59,6 +60,8 @@ export const router = createBrowserRouter([
           guard('gr:manage', [{ path: '/receipts/new', element: <ReceiptFormPage /> }]),
           guard('issue:view', [{ path: '/issues', element: <IssueListPage /> }, { path: '/issues/:id', element: <IssueDetailPage /> }]),
           guard('issue:create', [{ path: '/issues/new', element: <IssueFormPage /> }, { path: '/issues/:id/edit', element: <IssueFormPage /> }]),
+          guard('adjustment:view', [{ path: '/adjustments', element: <AdjustmentListPage /> }, { path: '/adjustments/:id', element: <AdjustmentDetailPage /> }]),
+          guard('adjustment:manage', [{ path: '/adjustments/new', element: <AdjustmentFormPage /> }, { path: '/adjustments/:id/edit', element: <AdjustmentFormPage /> }]),
           guard('user:manage', [{ path: '/users', element: <UsersPage /> }]),
           { path: '*', element: <NotFoundPage /> },
         ],
