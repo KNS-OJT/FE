@@ -72,4 +72,6 @@ export const poApi = {
   update: async (id: number, v: PoUpdateInput) => mapPo(asObj(await api.put<unknown>(`/po/${id}`, updateBody(v)))),
   /** POST /api/po/{id}/order: DRAFT → ORDERED */
   order: (id: number) => api.post<unknown>(`/po/${id}/order`),
+  /** POST /api/po/{id}/cancel { reason } */
+  cancel: (id: number, reason: string) => api.post<unknown>(`/po/${id}/cancel`, { reason }),
 };

@@ -46,7 +46,7 @@ export default function SuppliersPage() {
     },
   });
   const toggle = useMutation({
-    mutationFn: (s: Supplier) => suppliersApi.update(s.id, { ...s, active: !s.active }),
+    mutationFn: (s: Supplier) => (s.active ? suppliersApi.update(s.id, { ...s, active: false }) : suppliersApi.activate(s.id)),
     onSuccess: invalidate,
     onError: (e) => message.error(errMsg(e)),
   });

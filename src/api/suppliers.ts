@@ -38,4 +38,6 @@ export const suppliersApi = {
   get: async (id: number) => map(asObj(await api.get<unknown>(`/suppliers/${id}`))),
   create: (v: SupplierInput) => api.post<unknown>('/suppliers', body(v)),
   update: (id: number, v: SupplierInput) => api.put<unknown>(`/suppliers/${id}`, body(v)),
+  /** POST /api/suppliers/{id}/activate — kích hoạt lại NCC đã ngừng */
+  activate: (id: number) => api.post<unknown>(`/suppliers/${id}/activate`),
 };

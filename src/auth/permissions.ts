@@ -28,7 +28,10 @@ export const PERMISSIONS = {
   'gr:manage': [W],
   'issue:view': [R, W, M], // IN11 (BE chưa cho Purchasing)
   'issue:create': [R, W, M],
-  'issue:confirm': [W], // IN12 (BE chưa có API)
+  'issue:confirm': [W], // IN12
+  'adjustment:view': [W, M], // IN18
+  'adjustment:manage': [W], // Warehouse Staff lập phiếu
+  'adjustment:approve': [M], // Manager duyệt (BR-24)
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

@@ -1,24 +1,44 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Button, Table } from 'antd';
+import { Button, Select, Table } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { issuesApi, type StockIssue } from '@/api/stockIssues';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
-import { ErrorAlert, PendingApiBanner } from '@/components/States';
+import { ErrorAlert } from '@/components/States';
 import { StatusTag } from '@/components/StatusTag';
 import { usePaging } from '@/components/usePaging';
 import { useAuth } from '@/auth/useAuth';
 import { fmtDateTime } from '@/lib/format';
 
+const STATUS_OPTIONS = [
+  { value: '', label: 'Tất cả trạng thái' },
+  { value: 'DRAFT', label: 'Nháp' },
+  { value: 'CONFIRMED', label: 'Đã xác nhận' },
+  { value: 'CANCELED', label: 'Đã hủy' },
+];
+
 export default function IssueListPage() {
   const nav = useNavigate();
   const { can } = useAuth();
   const { page, size, pagination } = usePaging();
-  const list = useQuery({ queryKey: ['issues', { page, size }], queryFn: () => issuesApi.list({ page, size }) });
+  const [status, setStatus] = useState('');
+  const list = useQuery({
+    queryKey: ['issues', { page, size, status }],
+    queryFn: () => issuesApi.list({ page, size, status: status || undefined }),
+  });
   return (
     <>
-      <PageHeader title="Phiếu xuất kho" subtitle="Danh sách phiếu xuất của bạn" extra={can('issue:create') && <Button type="primary" onClick={() => nav('/issues/new')}>+ Tạo yêu cầu xuất</Button>} />
-      <PendingApiBanner text="Backend mới hỗ trợ tạo và sửa phiếu Nháp. Gửi yêu cầu, xác nhận xuất (trừ tồn), từ chối và hủy sẽ bật khi BE có API." />
+      <PageHeader title="Phiếu xuất kho" subtitle="Danh sách phiếu xuất" extra={can('issue:create') && <Button type="primary" onClick={() => nav('/issues/new')}>+ Tạo yêu cầu xuất</Button>} />
+      <div className="toolbar">
+        <Select
+          value={status}
+          onChange={setStatus}
+          options={STATUS_OPTIONS}
+          style={{ width: 200 }}
+          placeholder="Trạng thái"
+        />
+      </div>
       {list.error && <ErrorAlert error={list.error} onRetry={() => list.refetch()} />}
       <Table<StockIssue>
         className="table-shell"

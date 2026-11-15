@@ -11,7 +11,6 @@ import { ErrorAlert } from '@/components/States';
 import { useAuth } from '@/auth/useAuth';
 import type { Permission } from '@/auth/permissions';
 import type { Role } from '@/auth/roles';
-import { env } from '@/config/env';
 import { palette } from '@/theme';
 
 type Metric = { key: keyof DashboardStats; label: string; to: string; perm: Permission; tone?: 'danger' | 'waiting' };
@@ -37,7 +36,7 @@ const SHORTCUTS: Record<Role, Shortcut[]> = {
     { title: 'Đề nghị của tôi', desc: 'Theo dõi trạng thái duyệt', to: '/pr', icon: <FileDoneOutlined /> },
   ],
   WAREHOUSE_STAFF: [
-    { title: 'Nhận hàng theo PO', desc: 'Lập và xác nhận phiếu nhập', to: env.demoMockMissing ? '/receipts/new' : '/po', icon: <ImportOutlined /> },
+    { title: 'Nhận hàng theo PO', desc: 'Lập và xác nhận phiếu nhập', to: '/receipts/new', icon: <ImportOutlined /> },
     { title: 'Hàng tồn thấp', desc: 'Sản phẩm cần bổ sung', to: '/stock/low', icon: <AlertOutlined /> },
     { title: 'Tồn kho', desc: 'Số lượng hiện có', to: '/stock', icon: <DatabaseOutlined /> },
     { title: 'Sổ kho', desc: 'Lịch sử nhập, xuất, điều chỉnh', to: '/ledger', icon: <HistoryOutlined /> },
